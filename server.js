@@ -1,78 +1,72 @@
-const express = require('express')
-const app=express()
-const mongoose = require('mongoose')
-const Product = require('./models/productModel')
+const express = require("express");
+const path = require("path");
+const morgan = require("morgan");
+const dotenv = require("dotenv");
 
+const app = express();
+const dbConnection = require("./config/database");
+const clientRouter = require("./routes/clientRoute");
+const subUserRouter = require("./routes/subUserRoute");
+const userRouter = require("./routes/userRoute");
+const ApiError = require("./utils/apiError");
+const globalError = require("./middlewares/errorMiddleware");
 
-app.use(express.json())
+dotenv.config({ path: "config.env" });
 
-app.get('/products', async(req, res) => {
-    try{
-        const products = await Product.find({})
-        res.status(200).json(products)
-    }catch(error){
-        res.status(500).json({message: message.error})
-    }
-})
+//db Connection
 
-app.get('/products/:id', async(req, res) => {
-    try{
-        const {id}= req.params
-        const products = await Product.findById(id)
-        res.status(200).json(products)
-    }catch(error){
-        res.status(500).json({message: message.error})
-    }
-})
+dbConnection();
 
-app.get('/', (req, res)=> {
-    res.send('Hello ')
-})
+const PORT = process.env.PORT || 8000;
 
-app.post('/products',async(req, res) => {
-    try{
-        const product = await Product.create(req.body)
-        res.status(200).json(product)
+const server = app.listen(PORT, () => {
+  console.log(`APP RUNNING ON PORT ${PORT}`);
+});
 
-    }catch(error){
-        console.log(error.message)
-        res.status(500).json({message: error.message})
-    }
-})
+//Middlewares
 
-app.put('/products/:id', async(req, res) => {
-    try {
-        const {id} = req.params
-        const product = await Product.findByIdAndUpdate(id , req.body)
-        if (!product) {
-            return res.status(404).json({message: `cannot find any product with the same id ${id}`})
-        }  
-        const updatedProduct = await Product.findById(id)
-        res.status(200).json(updatedProduct)
-    } catch (error) {
-        res.status(500).json({message: message.error})
-    }
-})
+app.set("view engine", "ejs");
+app.set("views", "views"); //the sencond 'views' is the name of our folder
 
-app.delete('/products/:id', async(req, res) => {
-    try {
-        const {id} = req.params
-        const product = await Product.findByIdAndDelete(id)
-        if(!product) {
-            return res.status(404).json({message:`cannot find any product with the same id ${id}`})
-        }
-        res.status(200).json(product)
-    } catch (error) {
-        res.status(500).json({message: message.error})
-    }
-})
+app.use(express.static(path.join(__dirname, "assets")));
 
-mongoose.connect('mongodb+srv://issame:issame97@cluster0.jkaiqd2.mongodb.net/node-API?retryWrites=true&w=majority')
-.then(() => {
-    console.log('connected to mongoDB')
-    app.listen(3000, ()=> {
-        console.log('APP RUNNING ON PORT 3000')
-    })
-}).catch((error) => {
-    console.log(error)
-})
+app.use(express.json());
+
+if (process.env.NODE_ENV === "developement") {
+  app.use(morgan("dev"));
+  console.log(`mode: ${process.env.NODE_ENV}`);
+}
+
+app.get("/", (req, res) => {
+  //res.sendFile(__dirname+'\\views\\index.html')
+  res.sendFile(path.join(__dirname, "views", "index.html"));
+  // process and plateform are both objects
+  //(installed automatically with nodejs)
+});
+
+//Mount routes
+
+app.use("/clients", clientRouter);
+app.use("/users", userRouter);
+app.use("/subusers", subUserRouter);
+
+app.all("*", (req, res, next) => {
+  //create error and send it to error handling middleware
+  //const err = new Error(`can't find this route: ${req.originalUrl}`)
+  //next(err.message)
+  next(new ApiError(`can't find this route: ${req.originalUrl}`, 400));
+});
+
+//Global error handling Middleware for express:
+
+app.use(globalError);
+
+//Handle rejections outside of express
+
+process.on("unhandledRejection", (err) => {
+  console.error(`UnhandledRejection Errors: ${err.name} | ${err.message}`);
+  server.close(() => {
+    console.error("shutting down...");
+    process.exit(1);
+  });
+});
