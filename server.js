@@ -1,13 +1,16 @@
 const express = require("express");
-const path = require("path");
+//const path = require("path");
 const morgan = require("morgan");
 const dotenv = require("dotenv");
+const cors = require("cors");
 
 const app = express();
 const dbConnection = require("./config/database");
 const clientRouter = require("./routes/clientRoute");
 const subUserRouter = require("./routes/subUserRoute");
 const userRouter = require("./routes/userRoute");
+const projectRouter = require("./routes/projectRoute");
+const machineRouter = require("./routes/machineRoute");
 const ApiError = require("./utils/apiError");
 const globalError = require("./middlewares/errorMiddleware");
 
@@ -17,6 +20,7 @@ dotenv.config({ path: "config.env" });
 
 dbConnection();
 
+//seting up MongoDB database for our app
 const PORT = process.env.PORT || 8000;
 
 const server = app.listen(PORT, () => {
@@ -28,27 +32,30 @@ const server = app.listen(PORT, () => {
 app.set("view engine", "ejs");
 app.set("views", "views"); //the sencond 'views' is the name of our folder
 
-app.use(express.static(path.join(__dirname, "assets")));
+//app.use(express.static(path.join(__dirname, "front/public")));
 
 app.use(express.json());
+app.use(cors());
 
 if (process.env.NODE_ENV === "developement") {
   app.use(morgan("dev"));
   console.log(`mode: ${process.env.NODE_ENV}`);
 }
 
-app.get("/", (req, res) => {
+/*app.get("*", (req, res) => {
   //res.sendFile(__dirname+'\\views\\index.html')
-  res.sendFile(path.join(__dirname, "views", "index.html"));
+  res.sendFile(path.join(__dirname, "client/build", "index.html"));
   // process and plateform are both objects
   //(installed automatically with nodejs)
-});
+});*/
 
 //Mount routes
 
-app.use("/clients", clientRouter);
-app.use("/users", userRouter);
-app.use("/subusers", subUserRouter);
+app.use("/api/v1/clients", clientRouter);
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/subusers", subUserRouter);
+app.use("/api/v1/projects", projectRouter);
+app.use("/api/v1/machines", machineRouter);
 
 app.all("*", (req, res, next) => {
   //create error and send it to error handling middleware

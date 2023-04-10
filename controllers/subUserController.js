@@ -3,6 +3,18 @@ const slugify = require("slugify");
 const ApiError = require("../utils/apiError");
 const subUserModel = require("../models/subUserModel");
 
+exports.setUserIdToBody = (req, res, next) => {
+  //Nested routes
+  if (!req.body.user) req.body.user = req.params.userId;
+  next();
+};
+
+exports.createFilterObj = (req, res, next) =>{
+  let filterObject = {};
+  if (req.params.userId) filterObject = { user: req.params.userId };
+  req.filterObject = filterObject;
+  next()
+}
 // @desc    Get list of users
 // @route   GET /subusers
 // @access  Private/Admin
@@ -10,7 +22,14 @@ exports.getAllSubUsers = asyncHandler(async (req, res) => {
   const page = req.query.page * 1 || 1;
   const limit = req.query.limit * 1 || 5;
   const skip = (page - 1) * limit;
-  const SubUsers = await subUserModel.find({}).skip(skip).limit(limit);
+
+  const SubUsers = await subUserModel
+    .find(req.filterObject)
+    .skip(skip)
+    .limit(limit);
+  //.populate({ path: "user", select: "name -_id" });
+  //if we need to show the user we use the populate function and
+  //select to select which propreties we want to get
   res.status(200).json({ results: SubUsers.length, page, SubUsers });
 });
 
@@ -20,6 +39,9 @@ exports.getAllSubUsers = asyncHandler(async (req, res) => {
 exports.getSubUserById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const SubUser = await subUserModel.findById(id);
+  //.populate({ path: "user", select: "name -_id" });
+  //if we need to show the user we use the populate function and
+  //select to select which propreties we want to get
   if (!SubUser) {
     //return res.status(404).json({message: `cannot find any client with the same id ${id}`})
     return next(

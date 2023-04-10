@@ -13,11 +13,11 @@ const subUserSchema = new mongoose.Schema(
       type: String,
       lowercase: true,
     },
-    category: {
+    user: {
       type: mongoose.Schema.ObjectId,
       ref: "User",
       required: [true, "SubUser must belong to parent User"],
-      minlength: [8, "category length must be at least 8"],
+      minlength: [8, "SubUser length must be at least 8"],
     },
   },
   { timestamp: true }

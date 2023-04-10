@@ -14,13 +14,16 @@ exports.getAllClients = asyncHandler(async (req, res) => {
 
 // @access Private
 exports.createClient = asyncHandler(async (req, res) => {
-  const Client = await clientModel.create({...req.body,slug: slugify(req.body.name),});
+  const Client = await clientModel.create({
+    ...req.body,
+    slug: slugify(req.body.name),
+  });
   res.status(200).json({ message: "Client created succesfully", Client });
 });
 
 // @access Public
 exports.getClientById = asyncHandler(async (req, res, next) => {
-  const  { id }  = req.params;
+  const { id } = req.params;
   const Client = await clientModel.findById(id);
   if (!Client) {
     //return res.status(404).json({message: `cannot find any client with the same id ${id}`})
@@ -43,7 +46,7 @@ exports.updateClient = asyncHandler(async (req, res, next) => {
   const Client = await clientModel.findByIdAndUpdate(
     req.params.id,
     updatedClient,
-    { new: true }
+    { new: true, runValidators: true }
   );
 
   if (!Client) {

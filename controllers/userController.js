@@ -1,8 +1,9 @@
 const asyncHandler = require("express-async-handler");
 //const { v4: uuidv4 } = require('uuid');
 //const sharp = require('sharp');
-//const bcrypt = require('bcryptjs');
+const bcrypt = require("bcryptjs");
 const slugify = require("slugify");
+const jwt = require("jsonwebtoken");
 //const factory = require('./handlersFactory');
 const ApiError = require("../utils/apiError");
 //const { uploadSingleImage } = require('../middlewares/uploadImageMiddleware');
@@ -38,9 +39,14 @@ exports.getUserById = asyncHandler(async (req, res, next) => {
 // @desc    Create user
 // @route   POST  /api/v1/users
 // @access  Private/Admin
-exports.createUser = asyncHandler(async (req, res) => { 
-  
-  const user = await UserModel.create({ ...req.body, slug: slugify(req.body.name)});
+exports.createUser = asyncHandler(async (req, res) => {
+  const { password } = req.body;
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const user = await UserModel.create({
+    ...req.body,
+    slug: slugify(req.body.name),
+    password: hashedPassword,
+  });
   res.status(200).json({ message: "User created succesfully", user: user });
 });
 
@@ -48,26 +54,26 @@ exports.createUser = asyncHandler(async (req, res) => {
 // @route   PUT /api/v1/users/:id
 // @access  Private/Admin
 exports.updateUser = asyncHandler(async (req, res, next) => {
-  const { name } = req.body;
+  const { name, password } = req.body;
   const updatedUser = { ...req.body };
 
   if (name) {
     updatedUser.slug = slugify(name);
   }
-  const document = await UserModel.findByIdAndUpdate(
-    req.params.id,
-    updatedUser,
-    {
-      new: true,
-    }
-  );
+  if (password) {
+    updatedUser.password = await bcrypt.hash(password, 10);
+  }
+  const user = await UserModel.findByIdAndUpdate(req.params.id, updatedUser, {
+    new: true,
+    runValidators: true,
+  });
 
-  if (!document) {
+  if (!user) {
     return next(new ApiError(`No User for this id ${req.params.id}`, 404));
   }
   res
     .status(200)
-    .json({ message: "User succesfully updated", updatedUser: document });
+    .json({ message: "User succesfully updated", updatedUser: user });
 });
 
 // @desc    Delete specific user
@@ -83,4 +89,27 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
     );
   }
   res.status(200).json({ message: "User successfully deleted", user: user });
+});
+
+exports.loginUser = asyncHandler(async (req, res, next) => {
+  const { username, password } = req.body;
+  const user = await UserModel.findOne({ username });
+
+  if (!user) {
+    //return res.status(404).json({message:`cannot find any client with the same id ${id}`})
+    return next(
+      new ApiError(
+        `cannot find any User with the same username ${username}`,
+        404
+      )
+    );
+  }
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+
+  if (!isPasswordValid) {
+    return next(new ApiError(`Username or password is incorrect !`, 404));
+  }
+  const jwtKey = process.env.JWT_KEY
+  const token = jwt.sign({ id: user._id }, jwtKey);
+  res.json({ token, userID: user._id });
 });

@@ -1,12 +1,14 @@
-const mongoose = require('mongoose')
+const mongoose = require("mongoose");
 
+const dbConnection = () => {
+  mongoose
+    .connect(process.env.DB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+    .then((conn) => {
+      console.log(`connected to mongoDB: ${conn.connection.host}`);
+    });
+};
 
-const dbConnection =  (app) => {
-    mongoose
-        .connect(process.env.DB_URI)
-        .then((conn) => {
-            console.log(`connected to mongoDB: ${conn.connection.host}`)
-        })
-    }
-
-module.exports= dbConnection
+module.exports = dbConnection;

@@ -5,6 +5,8 @@ const {
   getSubUserById,
   updateSubUser,
   deleteSubUser,
+  setUserIdToBody,
+  createFilterObj,
 } = require("../controllers/subUserController");
 const {
   getsubUserByIdValidator,
@@ -13,12 +15,14 @@ const {
   deleteClientValidator,
 } = require("../utils/validators/subUserValidator");
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
+//mergeParams allow us to access parametres on other routers
+//exp: we need to access the userId from the userRouter
 
 router
   .route("/")
-  .get(getAllSubUsers)
-  .post(createsubUserValidator, createSubUser);
+  .get(createFilterObj, getAllSubUsers)
+  .post(setUserIdToBody, createsubUserValidator, createSubUser);
 router
   .route("/:id")
   .get(getsubUserByIdValidator, getSubUserById)

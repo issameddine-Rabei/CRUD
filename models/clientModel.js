@@ -1,38 +1,49 @@
-const mongoose = require('mongoose')
+const mongoose = require("mongoose");
 
-const clientSchema=mongoose.Schema({
-            name: {
-                type: String,
-                trim: true,
-                required: [true,'Please enter your name'],
-                minlength: [3, 'too short client name'],
-                maxlength: [32 , 'too long client name']
-            },
-            // slug: A and B => a-and-b  
-            slug: {
-                type: String,
-                lowercase: true
-            },
-            email:{
-                type: String,
-                trim: true,
-                required: [true,'Please enter your email'],
-                unique: [true, 'email must be unique']
-            },
-            phone: {
-                type: Number,
-                required: true,
-            },
-            image: {
-                type: String,
-                required: false
-            }
+const clientSchema = mongoose.Schema(
+  {
+    name: {
+      type: String,
+      trim: true,
+      required: [true, "Please enter your name"],
+    },
+    // slug: A and B => a-and-b
+    slug: {
+      type: String,
+      lowercase: true,
+    },
+    email: {
+      type: String,
+      trim: true,
+      required: [true, "Please enter your email"],
+      unique: [true, "email must be unique"],
+    },
+    phone: {
+      type: String,
+      required: true,
+    },
+    image: {
+      type: String,
+      required: false,
+    },
+    projects: {
+      type: [{ type: mongoose.Schema.ObjectId, ref: "Project" }],
+      validate: {
+        validator: async function (ids) {
+          const employees = await mongoose
+            .model("Project")
+            .find({ _id: { $in: ids } });
+          return employees.length === ids.length;
         },
-        {
-            timestamps: true //create 2 fields (createdAT and updated AT)
-        }
-        )
+        message: "All team members must have be Employee ",
+      },
+    },
+  },
+  {
+    timestamps: true, //create 2 fields (createdAT and updated AT)
+  }
+);
 
-const Client = mongoose.model('Client', clientSchema)
+const Client = mongoose.model("Client", clientSchema);
 
-module.exports = Client
+module.exports = Client;

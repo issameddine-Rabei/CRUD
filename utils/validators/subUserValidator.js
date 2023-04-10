@@ -4,9 +4,9 @@ const validatorMiddleware = require("../../middlewares/validatorMiddleware");
 // Finds the validation errors in this request and wraps them in an object with handy functions
 
 exports.getsubUserByIdValidator = [
-    check('id').isMongoId().withMessage('invalid subUser ID format'),
-    validatorMiddleware
-]
+  check("id").isMongoId().withMessage("invalid subUser ID format"),
+  validatorMiddleware,
+];
 
 exports.createsubUserValidator = [
   check("name")
@@ -16,7 +16,7 @@ exports.createsubUserValidator = [
     .withMessage("Too short SubUser name")
     .isLength({ max: 32 })
     .withMessage("Too long SubUser name"),
-  check("category")
+  check("user")
     .notEmpty()
     .withMessage("subUser must belong to a user")
     .isMongoId()
@@ -25,11 +25,11 @@ exports.createsubUserValidator = [
 ];
 
 exports.updateClientValidator = [
-    check('id').isMongoId().withMessage('invalid SubUser ID format'),
-    validatorMiddleware
-]
+  check("id").isMongoId().withMessage("invalid SubUser ID format"),
+  validatorMiddleware,
+];
 
 exports.deleteClientValidator = [
-    check('id').isMongoId().withMessage('invalid SubUser ID format'),
-    validatorMiddleware
-]
+  check("id").isMongoId().withMessage("invalid SubUser ID format"),
+  validatorMiddleware,
+];
